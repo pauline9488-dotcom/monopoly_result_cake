@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Baking Championship - Score Reveal</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- SheetJS CDN for reading Excel files -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <!-- Canvas Confetti CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+  <!-- Google Fonts: Fredoka & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+    .font-fun {
+      font-family: 'Fredoka', cursive, sans-serif;
+    }
+    @keyframes pulse-ring {
+      0% { transform: scale(0.95); opacity: 0.8; }
+      50% { transform: scale(1.15); opacity: 0.3; }
+      100% { transform: scale(0.95); opacity: 0.8; }
+    }
+    .pulse-ring-anim {
+      animation: pulse-ring 2.5s infinite ease-in-out;
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-12px) rotate(2deg); }
+    }
+    .float-anim {
+      animation: float 3s ease-in-out infinite;
+    }
+    .gold-glow {
+      box-shadow: 0 0 35px rgba(245, 158, 11, 0.45);
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-rose-50 via-pink-100 to-amber-100 text-slate-800 flex flex-col justify-between relative overflow-x-hidden select-none">
+
+  <!-- Top Navigation & Floating Controls -->
+  <header class="w-full flex items-center justify-between p-4 sm:p-6 z-40">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-2xl bg-white/80 shadow-md flex items-center justify-center text-2xl border border-rose-200">
+        🎂
+      </div>
+      <span class="font-fun font-bold text-xl text-rose-600 hidden sm:inline tracking-wide">Bake Master League</span>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <!-- Audio Toggle Button -->
+      <button 
+        id="sound-toggle-btn" 
+        onclick="toggleSound()" 
+        class="px-3 py-2 sm:px-4 sm:py-2.5 bg-white/80 hover:bg-white text-slate-700 rounded-full shadow-md hover:shadow-lg transition flex items-center gap-2 border border-rose-100 text-sm font-semibold"
+        title="Toggle Sound Effects"
+      >
+        <span id="sound-icon">🔊</span>
+        <span id="sound-label" class="hidden sm:inline">Sound On</span>
+      </button>
+
+      <!-- Settings Button -->
+      <button 
+        onclick="openSettings()" 
+        class="p-2.5 sm:p-3 bg-white/80 hover:bg-white text-rose-500 rounded-full shadow-md hover:shadow-lg transition border border-rose-100 hover:rotate-45"
+        title="Game Settings"
+      >
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main View Container -->
+  <main class="flex-1 flex flex-col items-center justify-center p-4 max-w-7xl w-full mx-auto relative z-10">
+
+    <!-- STAGE 0: WELCOME & EXCEL UPLOAD -->
+    <section id="stage-0" class="flex flex-col items-center text-center transition-all duration-500 w-full max-w-2xl py-6">
+      <div class="text-8xl sm:text-9xl mb-4 float-anim drop-shadow-md">🍰</div>
+      <h1 class="font-fun text-4xl sm:text-6xl font-black text-rose-600 drop-shadow-sm mb-3">
+        Baking Championship
+      </h1>
+      <p class="text-lg sm:text-2xl text-rose-500/90 font-medium mb-8">
+        Reveal who baked the most cakes with suspense and glory!
+      </p>
+
+      <!-- Excel Uploader & Sheet Switcher Box -->
+      <div class="bg-white/80 backdrop-blur-md border-2 border-white p-6 sm:p-8 rounded-3xl shadow-xl w-full mb-8 space-y-4">
+        
+        <!-- File Input -->
+        <label class="cursor-pointer group flex flex-col items-center justify-center border-2 border-dashed border-rose-300 hover:border-rose-500 rounded-2xl p-6 bg-rose-50/50 hover:bg-rose-50 transition">
+          <div class="w-14 h-14 mb-3 rounded-full bg-rose-100 flex items-center justify-center text-rose-500 group-hover:scale-110 transition">
+            <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+            </svg>
+          </div>
+          <span class="font-bold text-rose-600 text-lg group-hover:text-rose-700">Upload Excel Spreadsheet</span>
+          <span class="text-xs text-rose-400 mt-1">Supports .xlsx or .xls files</span>
+          <input type="file" id="excel-file-input" accept=".xlsx, .xls" class="hidden" onchange="handleExcelUpload(event)">
+        </label>
+
+        <!-- Current File / Sheet Selector (Shown after upload or defaults) -->
+        <div id="sheet-selection-box" class="hidden flex flex-col gap-2 pt-2 border-t border-rose-100 text-left">
+          <label class="text-sm font-bold text-slate-700 flex items-center justify-between">
+            <span>📑 Select Sheet to Display:</span>
+            <span id="active-filename" class="text-xs text-rose-500 font-semibold truncate max-w-[200px]"></span>
+          </label>
+          <div class="relative">
+            <select 
+              id="sheet-dropdown" 
+              onchange="onSheetChange(this.value)" 
+              class="w-full bg-white border-2 border-rose-200 text-slate-800 font-bold py-3 px-4 rounded-xl shadow-sm appearance-none focus:outline-none focus:border-rose-400 cursor-pointer"
+            >
+              <!-- Populated dynamically -->
+            </select>
+            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-rose-500">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
+            </div>
+          </div>
+        </div>
+
+        <div id="file-status" class="text-xs font-semibold text-emerald-600 hidden">
+          ✓ Excel data loaded and ready to reveal!
+        </div>
+      </div>
+
+      <!-- Start Game Big Button -->
+      <button 
+        onclick="goToStage(1)" 
+        class="px-10 py-5 bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white font-fun text-2xl font-bold rounded-full shadow-[0_8px_0_rgb(190,18,60)] hover:shadow-[0_4px_0_rgb(190,18,60)] hover:translate-y-1 transition active:translate-y-2 active:shadow-none flex items-center gap-3"
+      >
+        <span>Start Game</span>
+        <span>🚀</span>
+      </button>
+    </section>
+
+    <!-- STAGE 1 & 2: ROUND 1 & TWO-WEEK TOTALS -->
+    <section id="stage-data" class="hidden w-full flex flex-col items-center">
+      <!-- Section Header -->
+      <div class="text-center mb-8">
+        <h2 id="stage-title" class="font-fun text-3xl sm:text-5xl font-extrabold text-rose-600 drop-shadow-sm transition-all">
+          📅 Round 1 Collection
+        </h2>
+        <p id="stage-subtitle" class="text-base sm:text-lg text-rose-500 font-medium mt-1">
+          Reviewing each team's gathered ingredients in the first round!
+        </p>
+      </div>
+
+      <!-- Dynamic Cards Grid -->
+      <div id="teams-grid" class="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-5 mb-24">
+        <!-- Injected via JavaScript -->
+      </div>
+    </section>
+
+    <!-- STAGE 3: DRAMATIC CALCULATING SUSPENSE -->
+    <section id="stage-3" class="hidden flex flex-col items-center text-center py-12">
+      <div class="relative mb-6">
+        <div class="text-9xl float-anim relative z-10">🧁</div>
+        <div class="absolute inset-0 bg-rose-400/30 rounded-full blur-2xl pulse-ring-anim z-0"></div>
+      </div>
+      <h2 class="font-fun text-4xl sm:text-6xl font-black text-rose-600 mb-3 animate-pulse">
+        Preheating The Ovens...
+      </h2>
+      <p class="text-xl sm:text-2xl text-rose-500 font-bold mb-6">
+        Mixing batter & calculating cakes based on recipes...
+      </p>
+      <div class="w-64 h-3 bg-white rounded-full overflow-hidden shadow-inner border border-rose-200">
+        <div class="h-full bg-gradient-to-r from-rose-400 to-amber-400 rounded-full animate-[wiggle_2s_ease-in-out_infinite] w-full origin-left" style="animation: pulse 1s infinite alternate;"></div>
+      </div>
+    </section>
+
+    <!-- STAGE 4: CAKE COUNT REVEAL & CHAMPION ANNOUNCEMENT -->
+    <section id="stage-4" class="hidden w-full flex flex-col items-center py-4">
+      <div class="text-center mb-10">
+        <span class="inline-block px-4 py-1.5 bg-yellow-100 text-yellow-800 text-sm font-black rounded-full mb-3 uppercase tracking-wider border border-yellow-300">
+          Grand Finale
+        </span>
+        <h2 class="font-fun text-4xl sm:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-rose-600 via-pink-600 to-amber-500 animate-bounce">
+          🎉 Final Cake Count Revealed! 🎉
+        </h2>
+        <p class="text-lg text-slate-600 font-medium mt-1">
+          Each cake requires: <span id="recipe-summary-pill" class="font-bold text-rose-600">6kg Egg, 2kg Flour, 1kg Sugar, 1L Milk</span>
+        </p>
+      </div>
+
+      <!-- Cakes Result Grid -->
+      <div id="final-results-grid" class="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-24 z-10">
+        <!-- Injected via JavaScript -->
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Sticky Bottom Navigation Bar -->
+  <footer id="bottom-action-bar" class="fixed bottom-6 inset-x-0 flex justify-center z-40 pointer-events-none">
+    <div class="pointer-events-auto">
+      <button 
+        id="next-stage-btn" 
+        onclick="nextStageAction()" 
+        class="hidden px-8 py-4 bg-slate-900 hover:bg-slate-800 text-white font-fun text-xl font-bold rounded-full shadow-[0_6px_0_rgb(30,41,59)] hover:shadow-[0_2px_0_rgb(30,41,59)] hover:translate-y-1 active:translate-y-2 active:shadow-none transition-all flex items-center gap-3 border-2 border-slate-700"
+      >
+        <span id="next-btn-text">Reveal Total</span>
+        <span id="next-btn-icon">➡️</span>
+      </button>
+
+      <button 
+        id="restart-game-btn" 
+        onclick="restartGame()" 
+        class="hidden px-8 py-3.5 bg-white text-rose-600 border-2 border-rose-300 font-fun text-lg font-bold rounded-full shadow-lg hover:bg-rose-50 transition active:scale-95 flex items-center gap-2"
+      >
+        <span>Restart Game ↺</span>
+      </button>
+    </div>
+  </footer>
+
+  <!-- SETTINGS MODAL -->
+  <div id="settings-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-3xl shadow-2xl p-6 sm:p-8 max-w-md w-full border border-rose-100 transform transition-all animate-in zoom-in-95">
+      <div class="flex justify-between items-center mb-5 border-b-2 border-rose-100 pb-3">
+        <h3 class="font-fun text-2xl font-bold text-rose-600 flex items-center gap-2">
+          <span>⚙️</span> Game Settings
+        </h3>
+        <button onclick="closeSettings()" class="text-slate-400 hover:text-rose-500 text-2xl font-bold">&times;</button>
+      </div>
+
+      <p class="text-sm text-slate-600 mb-5 font-medium leading-relaxed">
+        Customize how many ingredients are needed to make <strong>1 Cake</strong>:
+      </p>
+
+      <div class="space-y-3 mb-6">
+        <!-- Egg -->
+        <div class="flex items-center justify-between p-3 rounded-2xl bg-amber-50 border border-amber-100">
+          <div class="flex items-center gap-3">
+            <span class="text-2xl">🥚</span>
+            <span class="font-bold text-amber-900">Egg</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <input type="number" id="setting-egg" min="1" value="6" class="w-16 p-2 text-center font-bold text-lg rounded-xl border border-amber-200 focus:outline-none focus:ring-2 focus:ring-amber-400">
+            <span class="text-xs font-semibold text-amber-700">kg</span>
+          </div>
+        </div>
+
+        <!-- Flour -->
+        <div class="flex items-center justify-between p-3 rounded-2xl bg-yellow-50 border border-yellow-100">
+          <div class="flex items-center gap-3">
+            <span class="text-2xl">🌾</span>
+            <span class="font-bold text-yellow-900">Flour</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <input type="number" id="setting-flour" min="1" value="2" class="w-16 p-2 text-center font-bold text-lg rounded-xl border border-yellow-200 focus:outline-none focus:ring-2 focus:ring-yellow-400">
+            <span class="text-xs font-semibold text-yellow-700">kg</span>
+          </div>
+        </div>
+
+        <!-- Sugar -->
+        <div class="flex items-center justify-between p-3 rounded-2xl bg-slate-50 border border-slate-200">
+          <div class="flex items-center gap-3">
+            <span class="text-2xl">🧂</span>
+            <span class="font-bold text-slate-800">Sugar</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <input type="number" id="setting-sugar" min="1" value="1" class="w-16 p-2 text-center font-bold text-lg rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-400">
+            <span class="text-xs font-semibold text-slate-600">kg</span>
+          </div>
+        </div>
+
+        <!-- Milk -->
+        <div class="flex items-center justify-between p-3 rounded-2xl bg-blue-50 border border-blue-100">
+          <div class="flex items-center gap-3">
+            <span class="text-2xl">🥛</span>
+            <span class="font-bold text-blue-900">Milk</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <input type="number" id="setting-milk" min="1" value="1" class="w-16 p-2 text-center font-bold text-lg rounded-xl border border-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-400">
+            <span class="text-xs font-semibold text-blue-700">L</span>
+          </div>
+        </div>
+      </div>
+
+      <button 
+        onclick="saveSettings()" 
+        class="w-full py-3.5 bg-gradient-to-r from-rose-500 to-pink-500 text-white font-fun text-lg font-bold rounded-2xl shadow-md hover:shadow-lg transition"
+      >
+        Save & Apply
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // --- DEFAULT INITIAL GAME DATA ---
+    const DEFAULT_TEAMS = [
+      { team: "Team 1", round1: { egg: 12, flour: 3, sugar: 2, milk: 13 }, round2: { egg: 6, flour: 5, sugar: 5, milk: 4 } },
+      { team: "Team 2", round1: { egg: 13, flour: 3, sugar: 12, milk: 13 }, round2: { egg: 10, flour: 3, sugar: 11, milk: 8 } },
+      { team: "Team 3", round1: { egg: 2, flour: 2, sugar: 3, milk: 5 }, round2: { egg: 5, flour: 10, sugar: 11, milk: 2 } },
+      { team: "Team 4", round1: { egg: 10, flour: 5, sugar: 13, milk: 12 }, round2: { egg: 13, flour: 10, sugar: 8, milk: 5 } },
+      { team: "Team 5", round1: { egg: 9, flour: 11, sugar: 6, milk: 14 }, round2: { egg: 15, flour: 2, sugar: 14, milk: 14 } }
+    ];
+
+    // Compute totals
+    DEFAULT_TEAMS.forEach(t => {
+      t.total = {
+        egg: t.round1.egg + t.round2.egg,
+        flour: t.round1.flour + t.round2.flour,
+        sugar: t.round1.sugar + t.round2.sugar,
+        milk: t.round1.milk + t.round2.milk
+      };
+    });
+
+    const INGREDIENTS = {
+      egg: { name: 'Egg', icon: '🥚', unit: 'kg', color: 'text-amber-700', bg: 'bg-amber-100/70' },
+      flour: { name: 'Flour', icon: '🌾', unit: 'kg', color: 'text-yellow-800', bg: 'bg-yellow-100/70' },
+      sugar: { name: 'Sugar', icon: '🧂', unit: 'kg', color: 'text-slate-700', bg: 'bg-slate-100' },
+      milk: { name: 'Milk', icon: '🥛', unit: 'L', color: 'text-blue-700', bg: 'bg-blue-100/70' }
+    };
+
+    // --- APPLICATION STATE ---
+    let currentStage = 0;
+    let teams = JSON.parse(JSON.stringify(DEFAULT_TEAMS));
+    let requirements = { egg: 6, flour: 2, sugar: 1, milk: 1 };
+    let parsedWorkbook = null;
+    let soundEnabled = true;
+    let audioCtx = null;
+
+    // --- SOUND EFFECTS (Web Audio API Synthesizer) ---
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    function playBeep(freq = 440, type = 'sine', duration = 0.08) {
+      if (!soundEnabled) return;
+      try {
+        initAudio();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+      } catch (e) {
+        console.warn("Audio error:", e);
+      }
+    }
+
+    function playDrumRoll() {
+      if (!soundEnabled) return;
+      initAudio();
+      let count = 0;
+      const interval = setInterval(() => {
+        playBeep(120 + Math.random() * 40, 'triangle', 0.05);
+        count++;
+        if (count > 25) clearInterval(interval);
+      }, 100);
+    }
+
+    function playFanfare() {
+      if (!soundEnabled) return;
+      initAudio();
+      const notes = [261.63, 329.63, 392.00, 523.25]; // C, E, G, High C
+      notes.forEach((freq, idx) => {
+        setTimeout(() => {
+          playBeep(freq, 'triangle', 0.35);
+        }, idx * 180);
+      });
+    }
+
+    function toggleSound() {
+      soundEnabled = !soundEnabled;
+      document.getElementById('sound-icon').innerText = soundEnabled ? '🔊' : '🔇';
+      document.getElementById('sound-label').innerText = soundEnabled ? 'Sound On' : 'Muted';
+    }
+
+    // --- EXCEL FILE HANDLING ---
+    function handleExcelUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const data = new Uint8Array(e.target.result);
+          parsedWorkbook = XLSX.read(data, { type: 'array' });
+          
+          const dropdown = document.getElementById('sheet-dropdown');
+          dropdown.innerHTML = '';
+
+          parsedWorkbook.SheetNames.forEach((name) => {
+            const opt = document.createElement('option');
+            opt.value = name;
+            opt.textContent = name;
+            dropdown.appendChild(opt);
+          });
+
+          document.getElementById('sheet-selection-box').classList.remove('hidden');
+          document.getElementById('active-filename').textContent = file.name;
+          document.getElementById('file-status').classList.remove('hidden');
+
+          // Parse the first sheet by default
+          if (parsedWorkbook.SheetNames.length > 0) {
+            parseSheetData(parsedWorkbook.SheetNames[0]);
+          }
+          playBeep(600, 'sine', 0.15);
+        } catch (err) {
+          console.error("Excel Read Error:", err);
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    function onSheetChange(sheetName) {
+      parseSheetData(sheetName);
+      playBeep(520, 'sine', 0.1);
+    }
+
+    function parseSheetData(sheetName) {
+      if (!parsedWorkbook) return;
+      const ws = parsedWorkbook.Sheets[sheetName];
+      if (!ws) return;
+
+      const raw = XLSX.utils.sheet_to_json(ws, { header: 1 });
+      const parsedTeams = [];
+
+      // Assume data starts at row index 2 (row 3 in Excel)
+      for (let i = 2; i < raw.length; i++) {
+        const row = raw[i];
+        if (!row || !row[0]) continue; // Skip blank rows
+
+        const r1Egg = Number(row[1]) || 0;
+        const r1Flour = Number(row[2]) || 0;
+        const r1Sugar = Number(row[3]) || 0;
+        const r1Milk = Number(row[4]) || 0;
+
+        const r2Egg = Number(row[5]) || 0;
+        const r2Flour = Number(row[6]) || 0;
+        const r2Sugar = Number(row[7]) || 0;
+        const r2Milk = Number(row[8]) || 0;
+
+        parsedTeams.push({
+          team: String(row[0]),
+          round1: { egg: r1Egg, flour: r1Flour, sugar: r1Sugar, milk: r1Milk },
+          round2: { egg: r2Egg, flour: r2Flour, sugar: r2Sugar, milk: r2Milk },
+          total: {
+            egg: r1Egg + r2Egg,
+            flour: r1Flour + r2Flour,
+            sugar: r1Sugar + r2Sugar,
+            milk: r1Milk + r2Milk
+          }
+        });
+      }
+
+      if (parsedTeams.length > 0) {
+        teams = parsedTeams;
+      }
+    }
+
+    // --- CAKE CALCULATIONS ---
+    function calculateCakes(total) {
+      return Math.floor(Math.min(
+        requirements.egg > 0 ? total.egg / requirements.egg : 0,
+        requirements.flour > 0 ? total.flour / requirements.flour : 0,
+        requirements.sugar > 0 ? total.sugar / requirements.sugar : 0,
+        requirements.milk > 0 ? total.milk / requirements.milk : 0
+      ));
+    }
+
+    // --- STAGE TRANSITIONS & UI RENDERING ---
+    function goToStage(stage) {
+      initAudio();
+      currentStage = stage;
+
+      // Hide all stages
+      document.getElementById('stage-0').classList.add('hidden');
+      document.getElementById('stage-data').classList.add('hidden');
+      document.getElementById('stage-3').classList.add('hidden');
+      document.getElementById('stage-4').classList.add('hidden');
+      document.getElementById('next-stage-btn').classList.add('hidden');
+      document.getElementById('restart-game-btn').classList.add('hidden');
+
+      if (stage === 0) {
+        document.getElementById('stage-0').classList.remove('hidden');
+      } else if (stage === 1) {
+        document.getElementById('stage-data').classList.remove('hidden');
+        document.getElementById('stage-title').textContent = "📅 Round 1 Collection";
+        document.getElementById('stage-subtitle').textContent = "Reviewing each team's gathered ingredients in the first round!";
+        renderCardsStage1();
+        
+        document.getElementById('next-stage-btn').classList.remove('hidden');
+        document.getElementById('next-btn-text').textContent = "Reveal Total ➡️";
+      } else if (stage === 2) {
+        document.getElementById('stage-data').classList.remove('hidden');
+        document.getElementById('stage-title').textContent = "🌟 Two-Week Totals!";
+        document.getElementById('stage-subtitle').textContent = "Adding Round 2 efforts! Watch the numbers soar...";
+        renderCardsStage2WithAnimation();
+
+        document.getElementById('next-stage-btn').classList.remove('hidden');
+        document.getElementById('next-btn-text').textContent = "Calculate Final Score 🎯";
+      } else if (stage === 3) {
+        document.getElementById('stage-3').classList.remove('hidden');
+        playDrumRoll();
+        // Automatically advance to Stage 4 after dramatic suspense
+        setTimeout(() => {
+          goToStage(4);
+        }, 3600);
+      } else if (stage === 4) {
+        document.getElementById('stage-4').classList.remove('hidden');
+        document.getElementById('restart-game-btn').classList.remove('hidden');
+        renderFinalStage4();
+      }
+    }
+
+    function nextStageAction() {
+      if (currentStage === 1) {
+        goToStage(2);
+      } else if (currentStage === 2) {
+        goToStage(3);
+      }
+    }
+
+    function restartGame() {
+      goToStage(0);
+    }
+
+    // --- RENDER STAGE 1 ---
+    function renderCardsStage1() {
+      const container = document.getElementById('teams-grid');
+      container.innerHTML = '';
+
+      teams.forEach((team, index) => {
+        const card = document.createElement('div');
+        card.className = "bg-white rounded-3xl shadow-xl p-5 border-4 border-rose-100 flex flex-col justify-between opacity-0 translate-y-6 transition-all duration-500";
+        
+        let ingredientsHTML = '';
+        Object.keys(INGREDIENTS).forEach(key => {
+          const item = INGREDIENTS[key];
+          ingredientsHTML += `
+            <div class="flex items-center justify-between p-2.5 rounded-xl ${item.bg}">
+              <span class="text-2xl">${item.icon}</span>
+              <div class="flex flex-col items-end">
+                <span class="text-xs font-bold ${item.color}">${item.name}</span>
+                <span class="text-xl font-black text-slate-800">${team.round1[key]} <span class="text-xs font-normal text-slate-500">${item.unit}</span></span>
+              </div>
+            </div>
+          `;
+        });
+
+        card.innerHTML = `
+          <div>
+            <h3 class="font-fun text-xl font-black text-center text-rose-500 border-b-2 border-rose-100 pb-2 mb-3 truncate">
+              ${team.team}
+            </h3>
+            <div class="space-y-2">
+              ${ingredientsHTML}
+            </div>
+          </div>
+        `;
+
+        container.appendChild(card);
+
+        // Sequential pop-in animation
+        setTimeout(() => {
+          card.classList.remove('opacity-0', 'translate-y-6');
+          playBeep(400 + index * 50, 'sine', 0.08);
+        }, index * 200 + 100);
+      });
+    }
+
+    // --- RENDER STAGE 2 WITH NUMERICAL TICKING ANIMATION ---
+    function renderCardsStage2WithAnimation() {
+      const container = document.getElementById('teams-grid');
+      container.innerHTML = '';
+
+      const numberElements = [];
+
+      teams.forEach((team, tIdx) => {
+        const card = document.createElement('div');
+        card.className = "bg-white rounded-3xl shadow-xl p-5 border-4 border-rose-200 flex flex-col justify-between";
+
+        let ingredientsHTML = '';
+        Object.keys(INGREDIENTS).forEach(key => {
+          const item = INGREDIENTS[key];
+          const spanId = `num-${tIdx}-${key}`;
+          ingredientsHTML += `
+            <div class="flex items-center justify-between p-2.5 rounded-xl ${item.bg}">
+              <span class="text-2xl">${item.icon}</span>
+              <div class="flex flex-col items-end">
+                <span class="text-xs font-bold ${item.color}">${item.name}</span>
+                <span class="text-xl font-black text-slate-800">
+                  <span id="${spanId}" class="transition-colors">${team.round1[key]}</span>
+                  <span class="text-xs font-normal text-slate-500">${item.unit}</span>
+                </span>
+              </div>
+            </div>
+          `;
+          numberElements.push({
+            id: spanId,
+            start: team.round1[key],
+            end: team.total[key]
+          });
+        });
+
+        card.innerHTML = `
+          <div>
+            <h3 class="font-fun text-xl font-black text-center text-rose-500 border-b-2 border-rose-100 pb-2 mb-3 truncate">
+              ${team.team}
+            </h3>
+            <div class="space-y-2">
+              ${ingredientsHTML}
+            </div>
+          </div>
+        `;
+
+        container.appendChild(card);
+      });
+
+      // Animate numbers up
+      setTimeout(() => {
+        const duration = 2000;
+        const startTime = performance.now();
+
+        function updateTick(now) {
+          const progress = Math.min((now - startTime) / duration, 1);
+          const easeOut = 1 - Math.pow(1 - progress, 3);
+
+          numberElements.forEach(item => {
+            const el = document.getElementById(item.id);
+            if (el) {
+              const currentVal = Math.floor(item.start + (item.end - item.start) * easeOut);
+              el.textContent = currentVal;
+              if (item.end > item.start) {
+                el.classList.add('text-rose-600', 'font-black');
+              }
+            }
+          });
+
+          if (Math.random() < 0.3) {
+            playBeep(500 + Math.random() * 200, 'sine', 0.04);
+          }
+
+          if (progress < 1) {
+            requestAnimationFrame(updateTick);
+          } else {
+            // Finalize
+            numberElements.forEach(item => {
+              const el = document.getElementById(item.id);
+              if (el) el.textContent = item.end;
+            });
+            playBeep(700, 'triangle', 0.15);
+          }
+        }
+        requestAnimationFrame(updateTick);
+      }, 400);
+    }
+
+    // --- RENDER FINAL STAGE 4 ---
+    function renderFinalStage4() {
+      const container = document.getElementById('final-results-grid');
+      container.innerHTML = '';
+
+      // Calculate cakes & find winner
+      const teamsWithCakes = teams.map(t => ({
+        ...t,
+        cakes: calculateCakes(t.total)
+      }));
+
+      const maxCakes = Math.max(...teamsWithCakes.map(t => t.cakes));
+
+      // Update recipe summary label
+      document.getElementById('recipe-summary-pill').textContent = 
+        `${requirements.egg}kg Egg, ${requirements.flour}kg Flour, ${requirements.sugar}kg Sugar, ${requirements.milk}L Milk`;
+
+      teamsWithCakes.forEach((team, index) => {
+        const isWinner = team.cakes === maxCakes && maxCakes > 0;
+        const card = document.createElement('div');
+        
+        card.className = `relative bg-white rounded-3xl p-6 transition-all duration-700 opacity-0 scale-75 flex flex-col justify-between ${
+          isWinner 
+            ? 'border-8 border-yellow-400 gold-glow bg-gradient-to-b from-amber-50 to-white -translate-y-2' 
+            : 'border-4 border-rose-100 shadow-lg'
+        }`;
+
+        let cakesIcons = '';
+        const displayCakes = Math.min(team.cakes, 24);
+        for (let i = 0; i < displayCakes; i++) {
+          cakesIcons += `<span class="inline-block transform hover:scale-125 transition">🍰</span>`;
+        }
+        if (team.cakes > 24) {
+          cakesIcons += `<span class="text-xs font-bold text-slate-500 self-center">+${team.cakes - 24} more</span>`;
+        }
+
+        card.innerHTML = `
+          ${isWinner ? `
+            <div class="absolute -top-6 left-1/2 -translate-x-1/2 bg-yellow-400 text-yellow-950 font-fun font-black px-5 py-1.5 rounded-full text-base shadow-lg border-2 border-white whitespace-nowrap animate-bounce flex items-center gap-1">
+              <span>🏆</span> Winner!
+            </div>
+          ` : ''}
+
+          <div>
+            <h3 class="font-fun text-2xl font-black text-center pb-3 mb-3 border-b-2 truncate ${
+              isWinner ? 'text-yellow-700 border-yellow-200' : 'text-rose-600 border-rose-100'
+            }">
+              ${team.team}
+            </h3>
+
+            <div class="py-4 text-center">
+              <div class="text-6xl font-black text-slate-800 tracking-tight flex items-baseline justify-center gap-2">
+                <span>${team.cakes}</span>
+                <span class="text-2xl font-fun font-bold text-slate-400">cakes</span>
+              </div>
+            </div>
+
+            <div class="flex flex-wrap justify-center gap-1.5 text-2xl min-h-[60px] p-2 bg-rose-50/50 rounded-2xl border border-rose-100">
+              ${team.cakes > 0 ? cakesIcons : '<span class="text-slate-400 text-sm font-semibold self-center">Not enough ingredients</span>'}
+            </div>
+          </div>
+        `;
+
+        container.appendChild(card);
+
+        // Staggered reveal animation
+        setTimeout(() => {
+          card.classList.remove('opacity-0', 'scale-75');
+          if (isWinner) {
+            playFanfare();
+            triggerConfetti();
+          } else {
+            playBeep(450 + index * 40, 'triangle', 0.1);
+          }
+        }, index * 600 + 400);
+      });
+    }
+
+    // --- CONFETTI CELEBRATION ---
+    function triggerConfetti() {
+      if (typeof confetti === 'function') {
+        const end = Date.now() + 2.5 * 1000;
+        const colors = ['#f43f5e', '#fbbf24', '#34d399', '#60a5fa', '#a855f7'];
+
+        (function frame() {
+          confetti({
+            particleCount: 5,
+            angle: 60,
+            spread: 55,
+            origin: { x: 0 },
+            colors: colors
+          });
+          confetti({
+            particleCount: 5,
+            angle: 120,
+            spread: 55,
+            origin: { x: 1 },
+            colors: colors
+          });
+
+          if (Date.now() < end) {
+            requestAnimationFrame(frame);
+          }
+        }());
+      }
+    }
+
+    // --- SETTINGS MODAL LOGIC ---
+    function openSettings() {
+      document.getElementById('setting-egg').value = requirements.egg;
+      document.getElementById('setting-flour').value = requirements.flour;
+      document.getElementById('setting-sugar').value = requirements.sugar;
+      document.getElementById('setting-milk').value = requirements.milk;
+      document.getElementById('settings-modal').classList.remove('hidden');
+    }
+
+    function closeSettings() {
+      document.getElementById('settings-modal').classList.add('hidden');
+    }
+
+    function saveSettings() {
+      requirements.egg = Math.max(1, parseInt(document.getElementById('setting-egg').value) || 1);
+      requirements.flour = Math.max(1, parseInt(document.getElementById('setting-flour').value) || 1);
+      requirements.sugar = Math.max(1, parseInt(document.getElementById('setting-sugar').value) || 1);
+      requirements.milk = Math.max(1, parseInt(document.getElementById('setting-milk').value) || 1);
+      
+      closeSettings();
+      playBeep(650, 'sine', 0.1);
+
+      // If currently on final stage, re-render immediately to reflect recipe updates
+      if (currentStage === 4) {
+        renderFinalStage4();
+      }
+    }
+  </script>
+</body>
+</html>
